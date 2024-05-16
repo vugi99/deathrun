@@ -228,8 +228,13 @@ function GM:PlayerSpawn( ply )
 	return self.BaseClass:PlayerSpawn( ply )
 end
 
+CreateConVar("deathrun_walk_speed", "250", defaultFlags, "Walk Speed")
 CreateConVar("deathrun_death_sprint", "650", defaultFlags, "Sprint speed for Death team.")
+CreateConVar("deathrun_runner_sprint", "300", defaultFlags, "Sprint speed for Runner team.")
+CreateConVar("deathrun_jump_power", "290", defaultFlags, "Jump power")
+
 CreateConVar("deathrun_starting_weapon", "weapon_crowbar", defaultFlags, "Starting weapon for both teams.")
+
 
 function GM:PlayerLoadout( ply )
 
@@ -245,12 +250,14 @@ function GM:PlayerLoadout( ply )
 	ply:SetPlayerColor( playercol )
 
 	-- run speeds and jump powah
-	ply:SetRunSpeed( 250 )
-	ply:SetWalkSpeed( 250 )
-	ply:SetJumpPower( 290 )
+	--ply:SetRunSpeed( 250 )
+	ply:SetWalkSpeed( GetConVar("deathrun_walk_speed"):GetFloat() )
+	ply:SetJumpPower( GetConVar("deathrun_jump_power"):GetFloat() )
 
 	if ply:Team() == TEAM_DEATH then
-		ply:SetRunSpeed( GetConVar("deathrun_death_sprint"):GetFloat() )	
+		ply:SetRunSpeed( GetConVar("deathrun_death_sprint"):GetFloat() )
+	else
+		ply:SetRunSpeed( GetConVar("deathrun_runner_sprint"):GetFloat() )
 	end
 
 	ply:DrawViewModel( true )
@@ -365,7 +372,7 @@ function GM:PlayerDeath( ply, inflictor, attacker )
 
 	local msg = attackerName.."\t"..("✕").."\t"..ply:Nick()
 	DR:DeathNotification( msg, 1 )
-	print(msg)
+	--print(msg)
 	
 end
 

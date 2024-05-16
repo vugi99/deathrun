@@ -510,9 +510,3 @@ function Base64Decode(data)
 		return string.char(c)
 	end))
 end
-
-if SERVER then
-	DR:AddChatCommand("records",function(ply, args)
-		ply:ConCommand("deathrun_records_menu")
-	end)
-end

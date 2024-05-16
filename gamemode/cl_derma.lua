@@ -352,7 +352,7 @@ function MPANEL:Init()
 
 	function self.navright:Think()
 		if self:IsDown() then
-			print("moving right")
+			--print("moving right")
 			self:GetParent().buttonoffset = self:GetParent().buttonoffset - 2 * (FrameTime()/(1/100))
 			self:GetParent():PerformLayout()
 		end

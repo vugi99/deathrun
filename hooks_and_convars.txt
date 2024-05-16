@@ -94,6 +94,15 @@ SERVER CONVARS:
 	deathrun_starting_weapon <string weapon name>
 		Default starting weapon
 
+	deathrun_walk_speed <0-1000>
+		The walk speed of players in the server
+
+	deathrun_runner_sprint <0-1000>
+		The sprint speed of runners
+
+	deathrun_jump_power <0-1000>
+		The jump power of everyone
+
 CLIENT CONVARS:
 
 	deathrun_crosshair_thickness <0-999>

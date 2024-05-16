@@ -96,18 +96,14 @@ function ZONE:Tick() -- cycle through zones and check for players
 	if skipcount == skip then
 		for name, z in pairs( self.zones ) do
 			if z.type then
- 				local border = Vector(20,20,20)
- 				local posmin, posmax = VectorMinMax(z.pos1, z.pos2)
- 				for k, ply in ipairs(ents.FindInBox(posmin - border,posmax + border)) do
- 					if ply:IsPlayer() == true then
-						-- create a bunch of variables on the player
+				for k, ply in ipairs(player.GetAll()) do
+					if (ply:IsValid()) then
 						ply.InZones = ply.InZones or {}
 
 						if not ply.InZones[ name ] then
 							if PlayerInCuboid( ply, z.pos1, z.pos2 ) then -- if we don't remember them being inside, but they are inside, then they mustve just entered the zone.
 								ply.InZones[name] = true
 								hook.Call("DeathrunPlayerEnteredZone", nil, ply, name, z)
-								
 							end
 						else
 							if not PlayerInCuboid( ply, z.pos1, z.pos2 ) then -- if we remember them being inside, but they arent anymore, then they left.
