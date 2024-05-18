@@ -74,7 +74,6 @@ function ROUND:GetRoundsPlayed()
 end
 
 local DeathTeamStreaks = {}
-local DeathTimes = {}
 
 -- handle death avoidance here, using the functions defined in init.lua
 
@@ -153,7 +152,6 @@ ROUND:AddState( ROUND_PREP,
 					ply:SetTeam( TEAM_RUNNER )
 				end
 				DeathTeamStreaks[ply] = DeathTeamStreaks[ply] or 0
-				DeathTimes[ply] = DeathTimes[ply] or 0
 			end
 
 
@@ -170,73 +168,35 @@ ROUND:AddState( ROUND_PREP,
 				deathsNeeded = DeathMax:GetInt()
 			end
 
-			-- get a list of players, ordered by how many death rounds they have had, lowest to highest
-			local orderedlist = {}
-			local unorderedlist = table.Copy(player.GetAllPlaying())
-
-			for i = 1, #unorderedlist do
-
-				local lowest = 9999999
-				local lowestply = nil
-				local lowestidx = 0
-
-				for k,ply in pairs( unorderedlist ) do
-					if DeathTimes[ply] < lowest then
-						lowest = DeathTimes[ply]
-						lowestply = ply
-						lowestidx = k
-					end
-				end
-
-				table.remove(unorderedlist, lowestidx)
-				table.insert(orderedlist, lowestply)
-
-			end
-
-			--print("\nList of Death counters:")
-			--PrintTable(orderedlist)
-
 			local timesLooped = 0
 
 			local punishmentpool = table.Copy( DR:GetOnlineBarredPlayers() )
-			local orderedpool = table.Copy( orderedlist )
 
 			-- remove players from orderedpool and pool if they have been death 2 rounds in a row
 			for k, ply in ipairs(player.GetAllPlaying()) do
 				local streak = DeathTeamStreaks[ ply ] or 0
+				ply.TryPDeathAvoid = nil
 				if streak > 0 then
-					print(ply:Nick().." has a streak greater than 0, removing from pool(s).")
-					table.RemoveByValue(orderedpool, ply)
+					--print(ply:Nick().." has a streak greater than 0, removing from pool(s).")
 					table.RemoveByValue(pool, ply)
 				end
 			end
-
-			--PrintTable( orderedpool )
 			--PrintTable( pool )
 
 			while #deaths < deathsNeeded and timesLooped < 100 do
 
 				if #punishmentpool > 0 then
 					local ply = punishmentpool[#punishmentpool]
-					
-					DR:PardonDeathAvoid( ply, 1 )
-
-					DR:ChatBroadcast( "Player "..ply:Nick().." is being punished for death avoidance! They have "..tostring(DR:GetDeathAvoid( ply )).." Death rounds remaining." )
 
 					table.insert( deaths, punishmentpool[#punishmentpool] ) -- add players to the deaths if they are being punishd for death avoid
 					table.RemoveByValue( pool, punishmentpool[#punishmentpool] )
 					table.remove( punishmentpool, #punishmentpool )
 
-				elseif #orderedpool > 0 then
-					local ply = orderedpool[1]
-					print("A death has been chosen through orderedpool: "..tostring(ply))
-					table.insert( deaths, ply )
-					table.remove( orderedpool, 1 )
-					table.RemoveByValue( pool, ply )
+					ply.TryPDeathAvoid = true
 				else
 					local randnum = math.random(#pool)
 					if pool[randnum] then
-						print("A death has been chosen: "..tostring(pool[randnum]))
+						--print("A death has been chosen: "..tostring(pool[randnum]))
 						table.insert( deaths, pool[randnum] )
 						table.remove( pool, randnum )
 					end
@@ -276,7 +236,7 @@ ROUND:AddState( ROUND_PREP,
 			else
 				ROUND_NO_DEATHS = false
 			end
-			
+
 			--now, spawn all deaths
 			for k,death in ipairs( deaths ) do
 				death:StripWeapons()
@@ -284,6 +244,13 @@ ROUND:AddState( ROUND_PREP,
 
 				death:SetTeam( TEAM_DEATH )
 				death:Spawn()
+
+				if (death.TryPDeathAvoid) then
+					death.TryPDeathAvoid = nil
+					DR:PardonDeathAvoid( death, 1 )
+
+					DR:ChatBroadcast( "Player "..death:Nick().." is being punished for death avoidance! They have "..tostring(DR:GetDeathAvoid( death )).." Death rounds remaining." )
+				end
 			end
 
 			--now, spawn all runners
@@ -303,9 +270,7 @@ ROUND:AddState( ROUND_PREP,
 			end
 
 			for k,ply in ipairs(player.GetAll()) do
-				DeathTimes[ply] = DeathTimes[ply] or 0
 				if ply:Team() == TEAM_DEATH then
-					DeathTimes[ply] = DeathTimes[ply] + 1
 					DeathTeamStreaks[ply] = DeathTeamStreaks[ply] + 1
 				else
 					DeathTeamStreaks[ply] = 0
@@ -313,14 +278,12 @@ ROUND:AddState( ROUND_PREP,
 				--print( ply:Nick(), team.GetName(ply:Team()) )
 			end
 
-			--print("\nDeathTimes table:")
-			for k,v in pairs(DeathTimes) do
-				if not IsValid( k ) then
-					DeathTimes[k] = nil
-				else
-					--print( k:Nick(), v )
+			for k, v in pairs(DeathTeamStreaks) do
+				if not IsValid(k) then
+					DeathTeamStreaks[k] = nil
 				end
 			end
+
 			--print("\nDeathTeamStreaks:")
 			--PrintTable( DeathTeamStreaks )
 
