@@ -214,12 +214,6 @@ ROUND:AddState( ROUND_PREP,
 			--PrintTable( orderedpool )
 			--PrintTable( pool )
 
-			if (deathsNeeded <= 0) then
-				ROUND_NO_DEATHS = true
-			else
-				ROUND_NO_DEATHS = false
-			end
-
 			while #deaths < deathsNeeded and timesLooped < 100 do
 
 				if #punishmentpool > 0 then
@@ -277,7 +271,10 @@ ROUND:AddState( ROUND_PREP,
 			end
 
 			if (#deaths == 0) then
+				ROUND_NO_DEATHS = true
 				DR:ChatBroadcast("Freerun !")
+			else
+				ROUND_NO_DEATHS = false
 			end
 			
 			--now, spawn all deaths
