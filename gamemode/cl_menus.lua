@@ -220,6 +220,8 @@ local deathrun_settings = {
 	{"number", "deathrun_announcement_interval", 0, 500, "Seconds between help messages."},
 	{"number", "deathrun_teammate_fade_distance", 0, 512, "Teammate fade distance."},
 
+	{"boolean", "deathrun_autofreerun_enabled", "Auto freerun"},
+
 
 }
 

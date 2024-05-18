@@ -31,6 +31,10 @@ DR.DeathAvoidPunishment = DeathAvoidPunishment
 
 ROUND_TIMER = ROUND_TIMER or 0
 
+
+ROUND_NO_DEATHS = false
+
+
 function ROUND:GetTimer() 
 	return ROUND_TIMER or 0
 end
@@ -107,7 +111,7 @@ ROUND:AddState( ROUND_WAITING,
 			end
 
 			timer.Create("DeathrunWaitingStateCheck", 5, 0, function()
-				if #player.GetAllPlaying() >= 2 then
+				if #player.GetAllPlaying() >= 1 then
 					ROUND:RoundSwitch( ROUND_PREP )
 					timer.Destroy( "DeathrunWaitingStateCheck" )
 				end
@@ -156,6 +160,9 @@ ROUND:AddState( ROUND_PREP,
 			-- let's pick deaths at random, but ignore if they have been death the 2 previous rounds
 			local deaths = {}
 			local deathsNeeded = math.ceil(DeathRatio:GetFloat() * #player.GetAllPlaying())
+			if #player.GetAllPlaying() == 1 then
+				deathsNeeded = 0
+			end
 			local runners = {}
 			local pool = table.Copy( player.GetAllPlaying() )
 			
@@ -186,8 +193,8 @@ ROUND:AddState( ROUND_PREP,
 
 			end
 
-			print("\nList of Death counters:")
-			PrintTable(orderedlist)
+			--print("\nList of Death counters:")
+			--PrintTable(orderedlist)
 
 			local timesLooped = 0
 
@@ -204,8 +211,14 @@ ROUND:AddState( ROUND_PREP,
 				end
 			end
 
-			PrintTable( orderedpool )
-			PrintTable( pool )
+			--PrintTable( orderedpool )
+			--PrintTable( pool )
+
+			if (deathsNeeded <= 0) then
+				ROUND_NO_DEATHS = true
+			else
+				ROUND_NO_DEATHS = false
+			end
 
 			while #deaths < deathsNeeded and timesLooped < 100 do
 
@@ -244,6 +257,28 @@ ROUND:AddState( ROUND_PREP,
 
 			runners = table.Copy( pool )
 			pool = {}
+
+			local d_count = #deaths
+			local auto_free_c = 0
+
+			for k, v in ipairs(deaths) do
+				if IsValid(v) then
+					if (v:GetInfoNum("deathrun_autofreerun_enabled", 0) == 1) then
+						auto_free_c = auto_free_c + 1
+					end
+				end
+			end
+
+			if (d_count == auto_free_c) then
+				for k, v in ipairs(deaths) do
+					table.insert(runners, v)
+				end
+				deaths = {}
+			end
+
+			if (#deaths == 0) then
+				DR:ChatBroadcast("Freerun !")
+			end
 			
 			--now, spawn all deaths
 			for k,death in ipairs( deaths ) do
@@ -278,19 +313,19 @@ ROUND:AddState( ROUND_PREP,
 				else
 					DeathTeamStreaks[ply] = 0
 				end
-				print( ply:Nick(), team.GetName(ply:Team()) )
+				--print( ply:Nick(), team.GetName(ply:Team()) )
 			end
 
-			print("\nDeathTimes table:")
+			--print("\nDeathTimes table:")
 			for k,v in pairs(DeathTimes) do
 				if not IsValid( k ) then
 					DeathTimes[k] = nil
 				else
-					print( k:Nick(), v )
+					--print( k:Nick(), v )
 				end
 			end
-			print("\nDeathTeamStreaks:")
-			PrintTable( DeathTeamStreaks )
+			--print("\nDeathTeamStreaks:")
+			--PrintTable( DeathTeamStreaks )
 
 		end
 	end,
@@ -329,7 +364,7 @@ ROUND:AddState( ROUND_ACTIVE,
 		if SERVER then
 			local playing = player.GetAllPlaying()
 
-			if #playing < 2 then
+			if #playing < 1 then
 				ROUND:RoundSwitch( ROUND_WAITING )
 				return
 			end
@@ -348,7 +383,7 @@ ROUND:AddState( ROUND_ACTIVE,
 
 			if (#deaths == 0 and #runners == 0) or ROUND:GetTimer() == 0 then
 				ROUND:FinishRound( WIN_STALEMATE )
-			elseif #deaths == 0 then
+			elseif (((#deaths == 0) and (not ROUND_NO_DEATHS)) or ((IsAllAlivePlayersFinished()) and (ROUND_NO_DEATHS))) then
 				ROUND:FinishRound( WIN_RUNNER )
 			elseif #runners == 0 then
 				ROUND:FinishRound( WIN_DEATH )

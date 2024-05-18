@@ -362,6 +362,8 @@ function GM:PlayerDeath( ply, inflictor, attacker )
 	hook.Call("DeathrunPlayerDeath", self, ply, inflictor, attacker) -- support for when traps kill players
 
 	--table.insert( DR.KillList, {ply, attacker} )
+
+	local attackerName
 	if IsValid(attacker) then
 		if attacker:IsPlayer() then
 			attackerName = attacker:Nick()
@@ -370,8 +372,10 @@ function GM:PlayerDeath( ply, inflictor, attacker )
 		end
 	end
 
-	local msg = attackerName.."\t"..("✕").."\t"..ply:Nick()
-	DR:DeathNotification( msg, 1 )
+	if attackerName then
+		local msg = attackerName.."\t"..("✕").."\t"..ply:Nick()
+		DR:DeathNotification( msg, 1 )
+	end
 	--print(msg)
 	
 end

@@ -191,3 +191,5 @@ end
 concommand.Add("+menu", function()
 	RunConsoleCommand("deathrun_dropweapon")
 end)
+
+local Autofreerun = CreateClientConVar("deathrun_autofreerun_enabled", 0, true, true)

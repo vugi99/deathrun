@@ -296,6 +296,19 @@ end)
 -- 	end
 -- end)
 
+function IsAllAlivePlayersFinished()
+	local ret = true
+
+	for k,ply in ipairs(player.GetAll()) do
+		if (ply and ply:Alive() and ply:Team() == TEAM_RUNNER) then
+			if (not ply.HasFinishedMap) then
+				ret = false
+			end
+		end
+	end
+	return ret
+end
+
 hook.Add("DeathrunPlayerEnteredZone", "DeathrunPlayerFinishMap", function(ply, name, z)
 
 	if string.sub( z.type, 1, 4 ) == "deny" then
