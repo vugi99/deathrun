@@ -64,7 +64,9 @@ concommand.Add("deathrun_respawn",function(ply, cmd, args)
 				-- end
 				for k,targ in ipairs( targets ) do
 					targ:KillSilent()
+					targ:SetCollisionGroup(COLLISION_GROUP_PLAYER)
 					targ:Spawn()
+					ply.HasFinishedMap = nil
 
 					players = players..targ:Nick()..", "
 
@@ -75,11 +77,13 @@ concommand.Add("deathrun_respawn",function(ply, cmd, args)
 		else
 			DeathrunSafeChatPrint( ply, "You are not allowed to do that.")
 		end
-	
+
 	elseif not args[1] then
-		if (DR:CanAccessCommand( ply, cmd ) or ROUND:GetCurrent() == ROUND_WAITING) and ( ply:Team() ~= TEAM_SPECTATOR ) then
+		if (DR:CanAccessCommand( ply, cmd ) or ROUND:GetCurrent() == ROUND_WAITING or ply:Team() == TEAM_GHOST) and ( ply:Team() ~= TEAM_SPECTATOR ) then
 			ply:KillSilent()
+			ply:SetCollisionGroup(COLLISION_GROUP_PLAYER)
 			ply:Spawn()
+			ply.HasFinishedMap = nil
 
 			DeathrunSafeChatPrint( ply, "Respawned yourself.")
 		else

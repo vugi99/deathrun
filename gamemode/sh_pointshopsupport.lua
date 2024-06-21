@@ -49,6 +49,9 @@ if SERVER then
 			--if PointshopRewardMessage:GetBool() then
 			ply:PS2_AddStandardPoints( amt, "You were given "..tostring( amt ).." points for "..(reason or "playing").."!", true)
 		end
+		if hasXelrackLevels then
+			XelrackAddXP(ply, amt)
+		end
 	end
 
 

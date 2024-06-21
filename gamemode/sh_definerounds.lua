@@ -19,6 +19,8 @@ DeathRatio = CreateConVar("deathrun_death_ratio", 0.15, defaultFlags, "What frac
 RoundLimit = CreateConVar("deathrun_round_limit", 6, defaultFlags, "How many rounds to play before changing the map.")
 DeathAvoidPunishment = CreateConVar("deathrun_death_avoid_punishment", 1, defaultFlags, "How many round should a player sit out after they attempt to death avoid?")
 DeathMax = CreateConVar("deathrun_max_deaths", 64, defaultFlags, "Maximum amount of players on the Death team at any given time.")
+StartCooldown = CreateConVar("deathrun_start_cooldown", 30, defaultFlags, "Time to wait before starting first round after server start or map change.")
+SoloRounds = CreateConVar("deathrun_solo_enable", 1, defaultFlags, "Enable deathrun solo rounds.")
 
 CreateConVar("deathrun_autoslay_delay", 90, defaultFlags, "How long to wait after a start of a round before slaying all the AFKs.")
 
@@ -33,6 +35,11 @@ ROUND_TIMER = ROUND_TIMER or 0
 
 
 ROUND_NO_DEATHS = false
+
+local Server_Start_Time = CurTime()
+
+
+local DeathBot
 
 
 function ROUND:GetTimer() 
@@ -102,6 +109,11 @@ ROUND:AddState( ROUND_WAITING,
 		hook.Call("DeathrunBeginWaiting", nil )
 
 		if SERVER then
+			if IsValid(DeathBot) then
+				DeathBot:Kick("")
+				DeathBot = nil
+			end
+
 			for k,ply in ipairs(player.GetAllPlaying()) do
 				ply:StripWeapons()
 				ply:StripAmmo()
@@ -110,11 +122,13 @@ ROUND:AddState( ROUND_WAITING,
 			end
 
 			timer.Create("DeathrunWaitingStateCheck", 5, 0, function()
-				if #player.GetAllPlaying() >= 1 then
+				if (((#player.GetAllPlaying() >= 1 and SoloRounds:GetBool()) or (not SoloRounds:GetBool() and #player.GetAllPlaying() >= 2)) and (CurTime() - Server_Start_Time) >= StartCooldown:GetInt()) then
 					ROUND:RoundSwitch( ROUND_PREP )
 					timer.Destroy( "DeathrunWaitingStateCheck" )
 				end
 			end)
+
+			A_RUNNER_FINISHED_MAP = false
 		end
 
 	end,
@@ -154,6 +168,11 @@ ROUND:AddState( ROUND_PREP,
 				DeathTeamStreaks[ply] = DeathTeamStreaks[ply] or 0
 			end
 
+			if IsValid(DeathBot) then
+				DeathBot:Kick("")
+				DeathBot = nil
+			end
+
 
 			-- let's pick deaths at random, but ignore if they have been death the 2 previous rounds
 			local deaths = {}
@@ -163,7 +182,7 @@ ROUND:AddState( ROUND_PREP,
 			end
 			local runners = {}
 			local pool = table.Copy( player.GetAllPlaying() )
-			
+
 			if deathsNeeded > DeathMax:GetInt() then
 				deathsNeeded = DeathMax:GetInt()
 			end
@@ -232,9 +251,19 @@ ROUND:AddState( ROUND_PREP,
 
 			if (#deaths == 0) then
 				ROUND_NO_DEATHS = true
+
+				DeathBot = player.CreateNextBot( "DeathBot" )
+				DeathBot:GodEnable()
+				table.insert(deaths, DeathBot)
+
 				DR:ChatBroadcast("Freerun !")
 			else
 				ROUND_NO_DEATHS = false
+			end
+
+			-- Reset collision group
+			for k,v in ipairs(player.GetAllPlaying()) do
+				v:SetCollisionGroup(COLLISION_GROUP_PLAYER)
 			end
 
 			--now, spawn all deaths
@@ -271,7 +300,9 @@ ROUND:AddState( ROUND_PREP,
 
 			for k,ply in ipairs(player.GetAll()) do
 				if ply:Team() == TEAM_DEATH then
-					DeathTeamStreaks[ply] = DeathTeamStreaks[ply] + 1
+					if DeathTeamStreaks[ply] then
+						DeathTeamStreaks[ply] = DeathTeamStreaks[ply] + 1
+					end
 				else
 					DeathTeamStreaks[ply] = 0
 				end
@@ -287,6 +318,9 @@ ROUND:AddState( ROUND_PREP,
 			--print("\nDeathTeamStreaks:")
 			--PrintTable( DeathTeamStreaks )
 
+			for k,v in ipairs(player.GetAll()) do
+				v.WantsSkip = nil
+			end
 		end
 	end,
 	function()
@@ -306,7 +340,7 @@ ROUND:AddState( ROUND_ACTIVE,
 			timer.Create("DeathrunAutoslay", GetConVarNumber("deathrun_autoslay_delay") + 5, 1, function()
 				for k,v in ipairs(player.GetAllPlaying()) do
 					local idletime = DR:CheckIdleTime( v )
-					print( v, idletime )
+					--print( v, idletime )
 					if idletime > GetConVarNumber("deathrun_autoslay_delay") then
 						net.Start("DeathrunSpectatorNotification")
 						net.Send( v )
@@ -324,7 +358,9 @@ ROUND:AddState( ROUND_ACTIVE,
 		if SERVER then
 			local playing = player.GetAllPlaying()
 
-			if #playing < 1 then
+			local playing_players = #player.GetAllPlayingHumans()
+
+			if (playing_players < 1 and SoloRounds:GetBool()) or (not SoloRounds:GetBool() and playing_players < 2) then
 				ROUND:RoundSwitch( ROUND_WAITING )
 				return
 			end
@@ -343,16 +379,19 @@ ROUND:AddState( ROUND_ACTIVE,
 
 			if (#deaths == 0 and #runners == 0) or ROUND:GetTimer() == 0 then
 				ROUND:FinishRound( WIN_STALEMATE )
-			elseif (((#deaths == 0) and (not ROUND_NO_DEATHS)) or ((IsAllAlivePlayersFinished()) and (ROUND_NO_DEATHS))) then
-				ROUND:FinishRound( WIN_RUNNER )
 			elseif #runners == 0 then
 				ROUND:FinishRound( WIN_DEATH )
+			elseif (((#deaths == 0) and (not ROUND_NO_DEATHS)) or ((IsAllAlivePlayersFinished()) and (ROUND_NO_DEATHS))) then
+				ROUND:FinishRound( WIN_RUNNER )
 			end
-
 		end
 	end,
 	function()
 		print("Exiting: ACTIVE")
+		if IsValid(DeathBot) then
+			DeathBot:Kick("")
+			DeathBot = nil
+		end
 	end
 )
 ROUND:AddState( ROUND_OVER,

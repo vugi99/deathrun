@@ -299,9 +299,9 @@ function MV:CheckRTV( suppress )
 	end
 
 	local votes = 0
-	local numplayers = #player.GetAll()
+	local numplayers = #player.GetHumans()
 
-	for k,v in ipairs(player.GetAll()) do
+	for k,v in ipairs(player.GetHumans()) do
 		v.WantsRTV = v.WantsRTV or false
 		if v.WantsRTV == true then
 			votes = votes + 1
@@ -309,14 +309,14 @@ function MV:CheckRTV( suppress )
 	end
 
 	local ratio = votes/numplayers
-	if ratio > RTVRatio:GetFloat() then
+	if ratio >= RTVRatio:GetFloat() then
 		if not hook.Call("DeathrunStartMapvote", nil, ROUND:GetRoundsPlayed()) then
 			MV:BeginMapVote()
 		end
 		DR:ChatBroadcast("RTV limit reached. Initiating mapvote.")
 	else
 
-		local needed = math.ceil(RTVRatio:GetFloat() * numplayers) - votes + 1
+		local needed = math.ceil(RTVRatio:GetFloat() * numplayers) - votes
 		if not suppress then
 			DR:ChatBroadcast(tostring(needed).." more votes needed in order to change the map. Type !rtv to vote.")
 		end

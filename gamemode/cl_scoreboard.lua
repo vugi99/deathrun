@@ -361,6 +361,16 @@ function DR:NewScoreboardPlayer( ply, w, h )
 				DR:ChatMessage( "Toggled mute on "..self.ply:Nick().."!" )
 			end
 
+			local records = menu:AddOption( "Show Records" )
+			records.ply = menu.ply
+			records:SetIcon("icon16/time.png")
+			function records:DoClick()
+				if not IsValid(self.ply) then return end
+				net.Start("deathrun_ask_selected_player_records_rc")
+				net.WriteEntity(self.ply)
+				net.SendToServer()
+			end
+
 		end
 
 		if DR:CanAccessCommand( LocalPlayer(), "deathrun_force_spectate" ) then
@@ -621,12 +631,17 @@ hook.Add("GetScoreboardTag", "memes 3: this time it's personal", function( ply )
 			return data.tag
 		end
 	end
+
+	if XelrackGetLevelFromXP then
+		return XelrackGetLevelFromXP(ply:GetNWInt("XelrackXP", 0))
+	end
 end)
 
 hook.Add("GetScoreboardRank", "memes 4: a good day to meme hard", function( ply )
 	local sid = ply:SteamID()
 	local sid64 = ply:SteamID64()
 	local data = nil
+
 
 	if DR.ScoreboardSpecials[ sid ] then
 		data = DR.ScoreboardSpecials[ sid ]

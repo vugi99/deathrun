@@ -222,6 +222,9 @@ local deathrun_settings = {
 
 	{"boolean", "deathrun_autofreerun_enabled", "Auto freerun"},
 
+	{"boolean", "deathrun_hideplayers_enabled", "Hide players"},
+
+	{"boolean", "deathrun_hidetrails_enabled", "Hide trails"},
 
 }
 

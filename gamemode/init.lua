@@ -68,8 +68,8 @@ include("sh_pointshopsupport.lua")
 AddCSLuaFile( "sh_pointshopsupport.lua" )
 
 -- statistics
-include("sh_statistics.lua")
-AddCSLuaFile("sh_statistics.lua")
+include("sv_statistics.lua")
+AddCSLuaFile("cl_statistics.lua")
 
 util.AddNetworkString("DeathrunChatMessage")
 util.AddNetworkString("DeathrunSyncMutelist")
@@ -110,12 +110,16 @@ hook.Add("PlayerInitialSpawn", "DeathrunPlayerInitialSpawn", function( ply )
 	ply.FirstSpawn = true
 	ply:SetTeam( TEAM_SPECTATOR )
 	--ply:Spawn()
-	DR:ChatBroadcast(ply:Nick().." has joined the server.")
 
+	if (ply:Nick() ~= "") then
+		DR:ChatBroadcast(ply:Nick().." has joined the server.")
+	end
 end)
 
 hook.Add("PlayerDisconnected", "DeathrunPlayerDisconnectMessage", function( ply )
-	DR:ChatBroadcast( ply:Nick().." has left the server." )
+	if (ply:Nick() ~= "DeathBot") then
+		DR:ChatBroadcast( ply:Nick().." has left the server." )
+	end
 end)
 
 CreateConVar("deathrun_death_model", "models/player/monk.mdl", defaultFlags, "The default model for the Deaths." )
@@ -143,7 +147,7 @@ hook.Add("PlayerSpawn", "DeathrunSetPlayerModels", function( ply )
 		ply:SetModel( mdl )
 	else
 		if (not ply:GetModel()) or ply:GetModel() == "models/player.mdl" then -- don't override the current set model if there is one
-			print("Player "..tostring(ply:Nick()).." did not have a model - setting them a new one.")
+			--print("Player "..tostring(ply:Nick()).." did not have a model - setting them a new one.")
 			ply:SetModel( table.Random( playermodels ) )
 			
 		end
@@ -152,6 +156,8 @@ hook.Add("PlayerSpawn", "DeathrunSetPlayerModels", function( ply )
 end)
 
 local function SpawnSpectator( ply )
+	--print("SpawnSpectator", ply)
+
 	ply:KillSilent()
 	ply:SetTeam( TEAM_SPECTATOR )
 	ply:BeginSpectate()
@@ -168,6 +174,11 @@ hook.Add("PlayerSpawn", "DeathrunPlayerSpawn", function( ply )
 		if ply:Team() == TEAM_GHOST then
 			ply:ConCommand("deathrun_spectate_only 0")
 			ply:StopSpectate()
+
+			local spawns = team.GetSpawnPoints( TEAM_RUNNER ) or {}
+			if #spawns > 0 then
+				ply:SetPos( table.Random(spawns):GetPos() )
+			end
 			return
 		end
 	end
@@ -570,7 +581,7 @@ function GM:GetFallDamage( ply, speed )
 		return dmg
 	end
 
-	local damage = math.max( 0, math.ceil( 0.2418*speed - 141.75 ) )
+	local damage = math.max( 0, math.ceil( 0.2418 * speed - 141.75 ) )
 	return damage
 end
 
@@ -863,9 +874,6 @@ function DR:RemoveSpeedMods()
 	end
 end
 
-
-
-
 hook.Add("PostCleanupMap", "RemoveSpeedMods", function()
 	DR:RemoveSpeedMods()
 end)
@@ -873,3 +881,70 @@ end)
 hook.Add("InitPostEntity", "RemoveSpeedMods", function()
 	DR:RemoveSpeedMods()
 end)
+
+
+local SkipRatio = CreateConVar("deathrun_skip_ratio", 0.8, defaultFlags, "Ratio to skip the round.")
+
+DR:AddChatCommand("skip", function(ply)
+	if ROUND:GetCurrent() == ROUND_ACTIVE then
+		if ply.WantsSkip then
+			ply.WantsSkip = nil
+
+			ply:DeathrunChatPrint( "Removed skip vote." )
+		else
+			ply.WantsSkip = true
+
+			local votes = 0
+			local numplayers = #player.GetHumans()
+
+			for k,v in ipairs(player.GetHumans()) do
+				v.WantsSkip = v.WantsSkip or false
+				if v.WantsSkip == true then
+					votes = votes + 1
+				end
+			end
+
+			local ratio = votes/numplayers
+			if ratio >= SkipRatio:GetFloat() then
+				DR:ChatBroadcast("Skipping Round")
+				ROUND:FinishRound( WIN_STALEMATE )
+			else
+				local needed = math.ceil(SkipRatio:GetFloat() * numplayers) - votes
+				DR:ChatBroadcast(tostring(needed).." more votes needed in order to skip the round. Type !skip to vote.")
+			end
+		end
+	else
+		ply:DeathrunChatPrint( "You cannot skip now." )
+	end
+end)
+
+
+hook.Add( "PlayerCanPickupWeapon", "noDeathWeaponPickup", function( ply, weapon )
+	if (((weapon.GetMaxClip1 and weapon:GetMaxClip1() > 0) or (weapon.GetMaxClip2 and weapon:GetMaxClip2() > 0)) and ply:Team() == TEAM_DEATH and (not A_RUNNER_FINISHED_MAP)) then
+		return false
+	end
+end)
+
+
+-- Prevent teleporters in freerun after finishing map
+hook.Add("DeathrunPlayerFinishMap", "PreventTpFreerunEnd", function( ply, zname, z, place )
+	if ROUND_NO_DEATHS then
+		ply:SetCollisionGroup( COLLISION_GROUP_DEBRIS )
+	end
+end)
+
+hook.Add( "PlayerUse", "PreventButtonsEnd", function( ply, ent )
+	if ROUND_NO_DEATHS then
+		if ply.HasFinishedMap then
+			return false
+		end
+	end
+end )
+
+hook.Add( "EntityTakeDamage", "BuffCrowbar", function( target, dmginfo )
+	if ( IsValid(dmginfo:GetInflictor()) and dmginfo:GetInflictor():IsWeapon() ) then
+		if dmginfo:GetInflictor():GetClass() == "weapon_crowbar" then
+			dmginfo:ScaleDamage( 2.5 )
+		end
+	end
+end )

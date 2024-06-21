@@ -142,7 +142,7 @@ end
 
 hook.Add("PlayerSpawn", "ZoneSendZonesSpawn", function( ply )
 	ZONE:SendZones( ply )
-	print("Sent zones to player "..ply:Nick())
+	--print("Sent zones to player "..ply:Nick())
 end)
 
 -- add some concommands for creating zones
@@ -255,7 +255,7 @@ end)
 local finishorder = {}
 local function resetFinishers()
 	for k, ply in ipairs(player.GetAll()) do
-		ply.HasFinishedMap = false
+		ply.HasFinishedMap = nil
 	end
 	finishorder = {}
 end
@@ -309,6 +309,9 @@ function IsAllAlivePlayersFinished()
 	return ret
 end
 
+
+A_RUNNER_FINISHED_MAP = false
+
 hook.Add("DeathrunPlayerEnteredZone", "DeathrunPlayerFinishMap", function(ply, name, z)
 
 	if string.sub( z.type, 1, 4 ) == "deny" then
@@ -318,7 +321,15 @@ hook.Add("DeathrunPlayerEnteredZone", "DeathrunPlayerFinishMap", function(ply, n
 		ply.DenyEntryList[ name ] = ply:GetPos()
 	end
 
-	if (ply:Team() ~= TEAM_RUNNER) or ply:GetSpectate() or (not ply:Alive()) or ROUND:GetCurrent() == ROUND_WAITING then return end
+	if (not ply:Alive()) or ROUND:GetCurrent() == ROUND_WAITING or ply:GetSpectate() then return end
+
+	-- Prevent ghost teleporting after finish
+	if (ply:Team() == TEAM_GHOST and z.type == "end" and ply.HasFinishedMap ~= true) then
+		ply:SetCollisionGroup(COLLISION_GROUP_DEBRIS)
+		ply.HasFinishedMap = true
+	end
+
+	if (ply:Team() ~= TEAM_RUNNER) then return end
 	if z.type == "end" and ply.HasFinishedMap ~= true then
 		table.insert( finishorder, ply )
 
@@ -346,6 +357,7 @@ hook.Add("DeathrunPlayerEnteredZone", "DeathrunPlayerFinishMap", function(ply, n
 		ply.HasFinishedMap = true
 
 		if place == 1 then
+			A_RUNNER_FINISHED_MAP = true
 			for k,v in ipairs(team.GetPlayers( TEAM_DEATH )) do
 				v:SetRunSpeed( v:GetWalkSpeed() ) -- deaths lose sprint when the runner finishes
 			end

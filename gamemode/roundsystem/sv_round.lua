@@ -13,9 +13,11 @@ function ROUND:RoundSwitch( r ) -- this can be used to switch or restart states
 	if (ROUND_TABLE[old]) then
 		ROUND_TABLE[old].OnExit()
 	end
-	ROUND_TABLE[new].OnEnter()
 
+	-- Set current round state before OnEnter to fix DeathBot and have same behavior on each round?
 	ROUND_CURRENT = new
+
+	ROUND_TABLE[new].OnEnter()
 
 	if SERVER then
 		net.Start("ROUND_STATE")

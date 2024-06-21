@@ -41,6 +41,18 @@ function player.GetAllPlaying()
 	return pool
 end
 
+function player.GetAllPlayingHumans()
+	local pool = {}
+	for k,ply in ipairs(player.GetHumans()) do
+		if ply then
+			if ( ply:ShouldStaySpectating() == false ) then
+				table.insert(pool, ply)
+			end
+		end
+	end
+	return pool
+end
+
 hook.Add("SetupMove", "DeathrunDisableSpectatorSpacebar", function( ply, mv, cmd )
 	if ply:GetObserverMode() ~= OBS_MODE_NONE then
 		mv:SetButtons( bit.band( mv:GetButtons(), bit.bnot( IN_JUMP ) ) )
@@ -264,7 +276,7 @@ local function AutoHop( ply, data )
 	if lp and ply ~= lp() then return end
 	if ply.AutoJumpEnabled == false or GetConVar("deathrun_allow_autojump"):GetBool() == false then return end
 	--print(ply.AutoJumpEnabled)
-	
+
 	local ButtonData = data:GetButtons()
 	if ba( ButtonData, IN_JUMP ) > 0 then
 		if ply:WaterLevel() < 2 and ply:GetMoveType() ~= MOVETYPE_LADDER and not ply:IsOnGround() then

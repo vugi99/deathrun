@@ -27,7 +27,7 @@ include( "cl_announcer.lua" )
 
 include( "sh_pointshopsupport.lua" )
 
-include( "sh_statistics.lua" )
+include( "cl_statistics.lua" )
 
 concommand.Add("dr_test_menu", function()
 	local frame = vgui.Create("arizard_window")
@@ -193,3 +193,79 @@ concommand.Add("+menu", function()
 end)
 
 local Autofreerun = CreateClientConVar("deathrun_autofreerun_enabled", 0, true, true)
+
+
+
+-- Hide Players
+
+local HidePlayers = CreateClientConVar("deathrun_hideplayers_enabled", 0, true, false)
+
+hook.Add("PrePlayerDraw", "DR_HidePlayers", function( ply )
+	if (ply ~= LocalPlayer()) then
+		if (HidePlayers:GetBool()) then
+			for k, vpart in pairs( ply.pac_outfits or {} ) do
+				vpart:SetHide(true)
+			end
+			ply:DrawShadow(false)
+		end
+		return HidePlayers:GetBool()
+	end
+end)
+
+hook.Add("PlayerFootstep", "HidePlayersFootstep", function( ply )
+	if (ply ~= LocalPlayer()) then
+		return HidePlayers:GetBool()
+	end
+end)
+
+local function ShowPlayerOnce(v)
+	v:DrawShadow(true)
+
+	for k, vpart in pairs( v.pac_outfits or {} ) do
+		vpart:SetHide(false)
+	end
+end
+
+cvars.AddChangeCallback("deathrun_hideplayers_enabled", function(convar_name, value_old, value_new)
+    --print("deathrun_hideplayers_enabled", update, value_new, type(value_new))
+
+	if value_new == "0" then
+		for i, v in ipairs(player.GetAll()) do
+			ShowPlayerOnce(v)
+		end
+	end
+end)
+
+hook.Add("EntityEmitSound", "HidePlayersNoSound", function( t )
+	if (t.Entity:IsPlayer() and HidePlayers:GetBool() and t.Entity ~= LocalPlayer()) then
+		-- dont return true, it will be apply changes to data table
+		--if t.Entity ~= LocalPlayer() then
+			return false
+		--end
+	end
+end )
+
+
+-- Hide Trails
+
+local HideTrails = CreateClientConVar("deathrun_hidetrails_enabled", 0, true, false)
+
+hook.Add("PrePlayerDraw", "HideTrails", function(ply)
+	if (ply ~= LocalPlayer()) then
+		if HideTrails:GetBool() then
+			if IsValid(ply.cl_PS2_trailEnt) then
+				ply.cl_PS2_trailEnt:SetNoDraw(true)
+			end
+		end
+	end
+end)
+
+cvars.AddChangeCallback("deathrun_hidetrails_enabled", function(convar_name, value_old, value_new)
+	if value_new == "0" then
+		for i, ply in ipairs(player.GetAll()) do
+			if IsValid(ply.cl_PS2_trailEnt) then
+				ply.cl_PS2_trailEnt:SetNoDraw(false)
+			end
+		end
+	end
+end)

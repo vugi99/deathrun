@@ -103,6 +103,15 @@ SERVER CONVARS:
 	deathrun_jump_power <0-1000>
 		The jump power of everyone
 
+	deathrun_start_cooldown <0-1000>
+		Time to wait before starting first round after server start or map change.
+
+	deathrun_records_page_length <0-1000>
+		Records UI page length
+
+	deathrun_solo_enable <0-1>
+		Enable deathrun solo rounds.
+
 CLIENT CONVARS:
 
 	deathrun_crosshair_thickness <0-999>
