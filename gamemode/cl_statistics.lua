@@ -229,6 +229,7 @@ end)
 local cur_maprecords_frame
 local cur_recs_map_list
 local cur_recs_map_page_text
+local cur_recs_map_table
 
 local function MRMenu_AddLines(recs)
     if cur_recs_map_list then
@@ -236,6 +237,7 @@ local function MRMenu_AddLines(recs)
             cur_recs_map_list:AddLine(v.nick, tostring(v.seconds) .. "s")
         end
     end
+    cur_recs_map_table = recs
 end
 
 local function OpenMapRecordsMenu(mapname, page, recs)
@@ -251,6 +253,7 @@ local function OpenMapRecordsMenu(mapname, page, recs)
             cur_maprecords_frame = nil
             cur_recs_map_list = nil
             cur_recs_map_page_text = nil
+            cur_recs_map_table = nil
         end
         cur_maprecords_frame = frame
 
@@ -267,6 +270,27 @@ local function OpenMapRecordsMenu(mapname, page, recs)
         RecsList:AddColumn( "Name" )
         RecsList:AddColumn( "Time" )
         cur_recs_map_list = RecsList
+
+        if DR:CanAccessCommand(LocalPlayer(), "deathrun_remove_record") then
+            RecsList.OnRowSelected = function( lst, index, pnl )
+                local menu = vgui.Create("DMenu")
+
+                local remove_rec = menu:AddOption( "Remove Record" )
+                remove_rec:SetIcon("icon16/cross.png")
+                function remove_rec:DoClick()
+                    if (type(cur_recs_map_table) == "table" and #cur_recs_map_table >= index) then
+                        net.Start("deathrun_remove_map_record")
+                        net.WriteString(mapname)
+                        net.WriteString(cur_recs_map_table[index].sid64)
+                        net.SendToServer()
+
+                        frame:Close()
+                    end
+                end
+
+                menu:Open()
+            end
+        end
 
         local PrevButton = vgui.Create("DButton", frame)
         PrevButton:SetText( "Previous Page" )
@@ -329,6 +353,7 @@ end)
 local cur_playerrecords_frame
 local cur_recs_player_list
 local cur_recs_player_page_text
+local cur_recs_player_table
 
 local function PRMenu_AddLines(recs)
     if cur_recs_player_list then
@@ -336,6 +361,7 @@ local function PRMenu_AddLines(recs)
             cur_recs_player_list:AddLine(v.mapname, tostring(v.seconds) .. "s")
         end
     end
+    cur_recs_player_table = recs
 end
 
 local function OpenPlayerRecordsMenu(sid64, nick, page, recs)
@@ -351,6 +377,7 @@ local function OpenPlayerRecordsMenu(sid64, nick, page, recs)
             cur_playerrecords_frame = nil
             cur_recs_player_list = nil
             cur_recs_player_page_text = nil
+            cur_recs_player_table = nil
         end
         cur_playerrecords_frame = frame
 
@@ -367,6 +394,27 @@ local function OpenPlayerRecordsMenu(sid64, nick, page, recs)
         RecsList:AddColumn( "Map Name" )
         RecsList:AddColumn( "Best Time" )
         cur_recs_player_list = RecsList
+
+        if DR:CanAccessCommand(LocalPlayer(), "deathrun_remove_record") then
+            RecsList.OnRowSelected = function( lst, index, pnl )
+                local menu = vgui.Create("DMenu")
+
+                local remove_rec = menu:AddOption( "Remove Record" )
+                remove_rec:SetIcon("icon16/cross.png")
+                function remove_rec:DoClick()
+                    if (type(cur_recs_player_table) == "table" and #cur_recs_player_table >= index) then
+                        net.Start("deathrun_remove_map_record")
+                        net.WriteString(cur_recs_player_table[index].mapname)
+                        net.WriteString(sid64)
+                        net.SendToServer()
+
+                        frame:Close()
+                    end
+                end
+
+                menu:Open()
+            end
+        end
 
         local PrevButton = vgui.Create("DButton", frame)
         PrevButton:SetText( "Previous Page" )

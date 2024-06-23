@@ -295,7 +295,7 @@ end)
 local Allowed_Characters = {
     "0","1","2","3","4","5","6","7","8","9",
     "a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z",
-    "_",
+    "_", "-"
 }
 
 local A_Chars_tab = {}
@@ -325,7 +325,6 @@ local function SendRecordsOfMapForClient_Page(ply, mapname, page)
     if (res_recs and #res_recs > 0) then
         for i, v in ipairs(res_recs) do
             res_recs[i].nick = DR:SteamToNick(v["sid64"])
-            res_recs[i].sid64 = nil
             res_recs[i].mapname = nil
         end
 
@@ -387,6 +386,8 @@ util.AddNetworkString("deathrun_ask_selected_map_records")
 util.AddNetworkString("deathrun_send_selected_player_records")
 util.AddNetworkString("deathrun_ask_selected_player_records_rc")
 util.AddNetworkString("deathrun_ask_selected_player_records")
+
+util.AddNetworkString("deathrun_remove_map_record")
 
 net.Receive( "deathrun_ask_selected_map_records", function( len, ply )
     if (IsValid(ply)) then
@@ -468,5 +469,19 @@ DR:AddChatCommand("ply_records", function( ply, args )
         end
     else
         ply:ChatPrint("Missing player name or steamid")
+    end
+end)
+
+
+net.Receive( "deathrun_remove_map_record", function( len, ply )
+    if (IsValid(ply)) then
+        if DR:CanAccessCommand(ply, "deathrun_remove_record") then
+            local mapname = net.ReadString()
+            local sid64 = net.ReadString()
+
+            if (mapname and sid64 and GoodMapName(mapname)) then
+                sql.Query("DELETE FROM deathrun_records WHERE mapname='" .. mapname .. "' AND sid64='" .. sid64 .. "'")
+            end
+        end
     end
 end)

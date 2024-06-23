@@ -92,6 +92,11 @@ end
 
 function MV:BeginMapVote() -- initiates the mapvote, and syncs the maps once
 
+	if MapVote then
+		MapVote.Start(nil, nil, nil, nil)
+		return
+	end
+
 	mapfiles = MV:GetGoodMaps()
 
 	-- populate the maplist
@@ -290,6 +295,8 @@ local RTVRatio = CreateConVar("mapvote_rtv_ratio", 0.5, defaultFlags, "The ratio
 function MV:CheckRTV( suppress )
 
 	if MV.Active then return end
+
+	if MapVote then return end
 
 	if not suppress then
 		if MV.LoadTime + 60 > CurTime() then

@@ -332,7 +332,6 @@ function DR:NewScoreboardPlayer( ply, w, h )
 		menu.ply = self:GetParent().ply
 
 		if not menu.ply:IsBot() then
-		
 			local copyID = menu:AddOption( "Copy SteamID to clipboard" )
 			copyID.ply = menu.ply
 			copyID:SetIcon("icon16/page_copy.png")

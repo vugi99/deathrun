@@ -116,6 +116,7 @@ DR.Permissions = {
 	["zone_setcolor"] = 3,
 	["zone_settype"] = 3,
 	["deathrun_force_spectate"] = 2,
+	["deathrun_remove_record"] = 3,
 
 	-- mapvote
 	["mapvote_list_maps"] = 1,
