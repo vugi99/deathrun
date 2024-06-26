@@ -340,8 +340,7 @@ end
 
 local function SendRecordsOfPlayerForClient_Page(ply, sid64, page)
     --print("SendRecordsOfPlayerForClient_Page", sid64, page)
-
-    local res_recs = sql.Query("SELECT * FROM deathrun_records WHERE sid64 = '"..sid64.."' ORDER BY mapname ASC LIMIT " .. tostring(records_page_length:GetInt()) .. " OFFSET " .. tostring((page-1)*records_page_length:GetInt()))
+    local res_recs = sql.Query("SELECT * FROM (SELECT *, RANK() OVER (PARTITION BY mapname ORDER BY seconds ASC) AS rank FROM deathrun_records) WHERE sid64 = '"..sid64.."' ORDER BY mapname ASC LIMIT " .. tostring(records_page_length:GetInt()) .. " OFFSET " .. tostring((page-1)*records_page_length:GetInt()))
 
     if (res_recs and #res_recs > 0) then
 
@@ -481,6 +480,15 @@ net.Receive( "deathrun_remove_map_record", function( len, ply )
 
             if (mapname and sid64 and GoodMapName(mapname)) then
                 sql.Query("DELETE FROM deathrun_records WHERE mapname='" .. mapname .. "' AND sid64='" .. sid64 .. "'")
+
+                if mapname == game.GetMap() then
+                    for i, v in ipairs(player.GetAll()) do
+                        if v:SteamID64() == sid64 then
+                            v.ply.best_rec_seconds = nil
+                            break
+                        end
+                    end
+                end
             end
         end
     end

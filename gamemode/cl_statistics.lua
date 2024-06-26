@@ -358,7 +358,7 @@ local cur_recs_player_table
 local function PRMenu_AddLines(recs)
     if cur_recs_player_list then
         for i, v in ipairs(recs) do
-            cur_recs_player_list:AddLine(v.mapname, tostring(v.seconds) .. "s")
+            cur_recs_player_list:AddLine(v.mapname, tostring(v.seconds) .. "s", tostring(v.rank))
         end
     end
     cur_recs_player_table = recs
@@ -393,6 +393,7 @@ local function OpenPlayerRecordsMenu(sid64, nick, page, recs)
         RecsList:SetMultiSelect( false )
         RecsList:AddColumn( "Map Name" )
         RecsList:AddColumn( "Best Time" )
+        RecsList:AddColumn( "Rank On Map" )
         cur_recs_player_list = RecsList
 
         if DR:CanAccessCommand(LocalPlayer(), "deathrun_remove_record") then

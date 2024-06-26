@@ -296,8 +296,6 @@ function MV:CheckRTV( suppress )
 
 	if MV.Active then return end
 
-	if MapVote then return end
-
 	if not suppress then
 		if MV.LoadTime + 60 > CurTime() then
 			DR:ChatBroadcast("It is too early to call an RTV.")

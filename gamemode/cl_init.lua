@@ -194,6 +194,8 @@ end)
 
 local Autofreerun = CreateClientConVar("deathrun_autofreerun_enabled", 0, true, true)
 
+local Autoghost = CreateClientConVar("deathrun_autoghost_enabled", 0, true, true)
+
 
 
 -- Hide Players

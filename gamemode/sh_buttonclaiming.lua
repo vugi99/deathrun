@@ -122,14 +122,10 @@ if SERVER then
 
 end
 
-if CLIENT then 
+if CLIENT then
 
 	net.Receive("UpdateButtonClaims", function()
-
 		buttons = net.ReadTable()
-
-
-
 	end)
 
 
@@ -152,6 +148,9 @@ if CLIENT then
 				for _,ply in ipairs( team.GetPlayers(TEAM_DEATH) ) do
 					if ply:SteamID() == v.claimedPlayer then
 						claimtext = "Claimed by "..ply:Nick()
+						if ply == LocalPlayer() then
+							claimtext = "Press '" .. string.upper(tostring(input.LookupBinding("+use"))) .. "' to activate"
+						end
 					end
 				end
 				draw.SimpleText( claimtext , "deathrun_derma_Tiny", x, y, Color(v.claimed and 255 or 100, (not v.claimed) and 255 or 100,100, alpha), TEXT_ALIGN_CENTER )
